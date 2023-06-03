@@ -44,7 +44,7 @@ update_system () {
 install_required () {
   echo -e "${YELLOW}Installing Required Software${NC}..."
   if [[ $SERVERTYPE == 1 ]]; then
-    apt install iputils-ping ufw wireguard -y
+    apt install iputils-ping ufw wireguard ufw -y
   else
     apt install wireguard -y
   fi
@@ -76,7 +76,8 @@ get_ips () {
   if [ $3 ]; then
     PUBLIC_IP=$3
   else
-  read -p $'\e[36mVPS Public IP\e[0m: ' PUBLIC_IP
+  # read -p $'\e[36mVPS Public IP\e[0m: ' PUBLIC_IP
+    PUBLIC_IP=152.67.60.40
   fi
 
   if [[ $SERVERTYPE == 1 ]]; then
@@ -122,8 +123,25 @@ create_keys () {
   sudo wg genkey | tee -a $WGCONFLOC | wg pubkey | sudo tee $WGPUBKEY > /dev/null
   echo -e "[${GREEN}Done${NC}]"
 }
-
 create_server_config () {
+  PK_FOR_CLIENT=$(cat $WGPUBKEY)
+  TUNNEL_IP=$(ip -4 a show scope global | grep global | awk '{print $2}' | sed 's/\/.*//g')
+  TUNNEL_INT=$(ip -4 a show scope global | grep global | grep -v " 172." | grep -v "wg0" | awk '{print $(NF)}')
+  SSHD_PORT=$(cat /etc/ssh/sshd_config | grep -E "Port [0-9]+" | grep -Eo "[0-9]+")
+  echo -e "${PK_FOR_CLIENT} -- ${TUNNEL_IP} -- ${TUNNEL_INT} -- ${SSHD_PORT}"
+  echo -en "${YELLOW}Flushing default iptables${NC}..."
+  iptables -F
+  iptables -t nat -F
+  echo -e "[${GREEN}Done${NC}]"
+  echo -en "${YELLOW}Flushing ufw${NC}..."
+  yes | ufw reset
+  echo -e "[${GREEN}Done${NC}]"
+  
+  echo -e "new create config file"
+  exit
+}
+
+create_server_config_old () {
   PK_FOR_CLIENT=$(cat $WGPUBKEY)
   TUNNEL_IP=$(ip -4 a show scope global | grep global | awk '{print $2}' | sed 's/\/.*//g')
   TUNNEL_INT=$(ip -4 a show scope global | grep global | grep -v " 172." | grep -v "wg0" | awk '{print $(NF)}')
@@ -485,7 +503,8 @@ fi
 FOUNDOLD=0
 
 # Look for an already set up wireguard config
-if grep -q -E 'PrivateKey = .+' $WGCONFLOC 2>/dev/null; then
+# if grep -q -E 'PrivateKey = .+' $WGCONFLOC 2>/dev/null; then
+if false; then
   # Check if Server/Client
   if grep -q 'Endpoint' $WGCONFLOC; then
     # Client
@@ -521,12 +540,13 @@ fi
 echo -e "${LBLUE}***************************************************${NC}"
 echo ""
 
-echo -e "break-here"
-exit
+
 
 if [[ $FOUNDOLD == 1 ]]; then
   echo "Options:"
   if [[ $FOUNDTYPE == 1 ]]; then #Server
+    echo -e "nonono1"
+    exit
     PS3="Select #: "
     select opt in "${options[@]}"
     do
@@ -568,6 +588,8 @@ if [[ $FOUNDOLD == 1 ]]; then
       esac
     done
   elif [[ $FOUNDTYPE == 2 ]]; then #Client
+    echo -e "nonono2"
+    exit
     PS3="Select #: "
     select opt in "${options[@]}"
     do
@@ -595,12 +617,14 @@ if [[ $FOUNDOLD == 1 ]]; then
   fi
 else
   stop_wireguard
-  update_system
-  install_required
-  configure_forwarding
+  # update_system
+  # install_required
+  # configure_forwarding
   get_ips $5 $6 $3
   create_keys
   create_server_config
+   echo -e "break-here"
+  exit
   ask_firewall
   script_complete
 fi
