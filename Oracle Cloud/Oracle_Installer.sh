@@ -440,6 +440,8 @@ echo -e "***************************************************${NC}"
 echo ""
 echo "This script will install and configure wireguard on your machines."
 if [[ $1 == "Local" ]]; then
+  echo -e "break1"
+  exit
   stop_wireguard
   update_system
   install_required
@@ -449,6 +451,8 @@ if [[ $1 == "Local" ]]; then
   script_complete
   exit
 elif [[ $1 == "LocalMod" ]]; then
+  echo -e "break2"
+  exit
   stop_wireguard
   modify_client_config $2
   start_wireguard
@@ -456,6 +460,8 @@ elif [[ $1 == "LocalMod" ]]; then
   exit
 else
   SERVERTYPE=1
+  # echo -e "break3"
+  # exit
   echo ""
   echo -e "Make sure you have followed the Opening Up Ports section found on:"
   echo -e "${LBU}https://github.com/mochman/Bypass_CGNAT/wiki/Oracle-Cloud--(Opening-Up-Ports)${NC}"
@@ -472,6 +478,10 @@ else
   fi
 fi
 
+
+
+
+
 FOUNDOLD=0
 
 # Look for an already set up wireguard config
@@ -479,12 +489,14 @@ if grep -q -E 'PrivateKey = .+' $WGCONFLOC 2>/dev/null; then
   # Check if Server/Client
   if grep -q 'Endpoint' $WGCONFLOC; then
     # Client
+    echo -e "Client-bp"
     FOUNDTYPE=2
     FOUNDOLD=1
     SERVERTYPE=2
     options=("Change Port->IP Mapping" "Reload Wireguard Service" "Exit Script")
   else
     # Server
+    echo -e "Server-bp"
     FOUNDTYPE=1
     FOUNDOLD=1
     SERVERTYPE=1
@@ -508,6 +520,9 @@ else
 fi
 echo -e "${LBLUE}***************************************************${NC}"
 echo ""
+
+echo -e "break-here"
+exit
 
 if [[ $FOUNDOLD == 1 ]]; then
   echo "Options:"
