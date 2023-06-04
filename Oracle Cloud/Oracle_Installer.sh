@@ -136,8 +136,42 @@ create_server_config () {
   echo -en "${YELLOW}Flushing ufw${NC}..."
   yes | ufw reset
   echo -e "[${GREEN}Done${NC}]"
-  
+   echo ""
+  echo ""
+  echo -e "${MAGEN}Before continuing with the rest of this script, please run this script on your Local Server with the following line${NC}:"
+  echo ""
+  echo -e "${LCYAN}./Oracle_Installer.sh Local $PK_FOR_CLIENT $PUBLIC_IP $WG_SERVER_IP $WG_CLIENT_IP $WGPORT $PORTLIST${NC}"
+  echo ""
+  echo -e "${MAGEN}That script will output a public key for you to input here.${NC}"
   echo -e "new create config file"
+  read -p $'\e[36mPublic Key from Client\e[0m: ' PK_FOR_SERVER
+  echo "ListenPort = $WGPORT" >> $WGCONFLOC
+  echo "Address = $WG_SERVER_IP/24" >> $WGCONFLOC
+  echo "" >> $WGCONFLOC
+  echo "PostUp =  ufw route allow in on ${TUNNEL_INT} to $WG_CLIENT_IP port 80 proto tcp" >> $WGCONFLOC
+  echo "PostUp = ufw route allow in on ${TUNNEL_INT} to $WG_CLIENT_IPport 443 proto tcp" >> $WGCONFLOC
+  echo "PostDown = ufw route delete allow in on ${TUNNEL_INT} to $WG_CLIENT_IP port 80 proto tcp" >> $WGCONFLOC
+  echo "PostDown = ufw route delete allow in on ${TUNNEL_INT} to $WG_CLIENT_IP port 443 proto tcp" >> $WGCONFLOC
+
+  echo "" >> $WGCONFLOC
+  echo "[Peer]" >> $WGCONFLOC
+  echo "PublicKey = $PK_FOR_SERVER" >> $WGCONFLOC
+  echo "AllowedIPs = $WG_CLIENT_IP/32" >> $WGCONFLOC
+  echo -e "${GREEN}Wireguard Config file created at $WGCONFLOC${NC}"
+  echo ""
+  echo -en "${YELLOW}Starting Wireguard${NC}..."
+  systemctl start wg-quick@wg0
+  echo -e "[${GREEN}Done${NC}]"
+  echo -e "${YELLOW}Waiting for connection${NC}..."
+  while ! ping -c 1 -W 1 $WG_CLIENT_IP > /dev/null 2>&1; do
+    printf '.'
+    sleep 2
+  done
+  echo -e "[${GREEN}Connection Established${NC}]"
+  echo -en "${YELLOW}Enabling Wireguard to start across reboots${NC}..."
+  systemctl enable wg-quick@wg0 >/dev/null
+  echo -e "[${GREEN}Done${NC}]"
+  echo "Your wireguard tunnel should be set up now.  If you need to reset the link for any reason, please run 'systemctl reboot wg-quick@wg0'"
   exit
 }
 
@@ -225,6 +259,44 @@ create_server_config_old () {
 }
 
 create_client_config () {
+  PUBLIC_IP=$1
+  WG_CLIENT_IP=$2
+  WGPORT=$3
+  PORTLIST=$4
+  PUBKEY=$5
+  WG_SERVER_IP=$6
+  PK_FOR_SERVER=$(cat $WGPUBKEY)
+  echo "Address = $WG_CLIENT_IP/24" >> $WGCONFLOC
+  echo "" >> $WGCONFLOC
+  echo "[Peer]" >> $WGCONFLOC
+  echo "PublicKey = $PUBKEY" >> $WGCONFLOC
+  echo "AllowedIPs = 0.0.0.0/0" >> $WGCONFLOC
+  echo "Endpoint = $PUBLIC_IP:$WGPORT" >> $WGCONFLOC
+  echo "PersistentKeepalive = 25" >> $WGCONFLOC
+  echo "Wireguard Config file created at $WGCONFLOC"
+  echo ""
+  echo ""
+  echo "Here is the Public Key for you to enter back on the VPS."
+  echo ""
+  echo -e "${LCYAN}$PK_FOR_SERVER${NC}"
+  echo ""
+  echo -en "${YELLOW}Starting Wireguard${NC}..."
+  systemctl start wg-quick@wg0
+  echo -e "[${GREEN}Done${NC}]"
+  echo -e "${YELLOW}Waiting for connection${NC}..."
+  while ! ping -c 1 -W 1 $WG_SERVER_IP > /dev/null; do
+    printf '.'
+    sleep 1
+  done
+  echo -e "[${GREEN}Connection Established${NC}]"
+  echo ""
+  echo -en "${YELLOW}Enabling Wireguard to start across reboots${NC}..."
+  systemctl enable wg-quick@wg0 >/dev/null
+  echo -e "[${GREEN}Done${NC}]"
+
+}
+
+create_client_config_old () {
   PUBLIC_IP=$1
   WG_CLIENT_IP=$2
   WGPORT=$3
@@ -458,8 +530,6 @@ echo -e "***************************************************${NC}"
 echo ""
 echo "This script will install and configure wireguard on your machines."
 if [[ $1 == "Local" ]]; then
-  echo -e "break1"
-  exit
   stop_wireguard
   update_system
   install_required
