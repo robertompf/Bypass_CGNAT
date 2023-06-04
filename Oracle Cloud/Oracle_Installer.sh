@@ -535,7 +535,7 @@ if [[ $1 == "Local" ]]; then
   install_required
   configure_forwarding
   create_keys
-  create_client_config $3 $5 $6 $7 $2 $4
+  create_client_config $3 $5 $6 $2 $4
   script_complete
   exit
 elif [[ $1 == "LocalMod" ]]; then
