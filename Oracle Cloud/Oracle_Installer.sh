@@ -149,7 +149,7 @@ create_server_config () {
   echo "Address = $WG_SERVER_IP/24" >> $WGCONFLOC
   echo "" >> $WGCONFLOC
   echo "PostUp =  ufw route allow in on ${TUNNEL_INT} to $WG_CLIENT_IP port 80 proto tcp" >> $WGCONFLOC
-  echo "PostUp = ufw route allow in on ${TUNNEL_INT} to $WG_CLIENT_IPport 443 proto tcp" >> $WGCONFLOC
+  echo "PostUp = ufw route allow in on ${TUNNEL_INT} to $WG_CLIENT_IP port 443 proto tcp" >> $WGCONFLOC
   echo "PostDown = ufw route delete allow in on ${TUNNEL_INT} to $WG_CLIENT_IP port 80 proto tcp" >> $WGCONFLOC
   echo "PostDown = ufw route delete allow in on ${TUNNEL_INT} to $WG_CLIENT_IP port 443 proto tcp" >> $WGCONFLOC
 
@@ -270,7 +270,7 @@ create_client_config () {
   echo "" >> $WGCONFLOC
   echo "[Peer]" >> $WGCONFLOC
   echo "PublicKey = $PUBKEY" >> $WGCONFLOC
-  echo "AllowedIPs = 0.0.0.0/0" >> $WGCONFLOC
+  echo "AllowedIPs = 10.1.0.0/24" >> $WGCONFLOC
   echo "Endpoint = $PUBLIC_IP:$WGPORT" >> $WGCONFLOC
   echo "PersistentKeepalive = 25" >> $WGCONFLOC
   echo "Wireguard Config file created at $WGCONFLOC"
