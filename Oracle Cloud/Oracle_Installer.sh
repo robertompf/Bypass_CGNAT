@@ -262,9 +262,9 @@ create_client_config () {
   PUBLIC_IP=$1
   WG_CLIENT_IP=$2
   WGPORT=$3
-  PORTLIST=$4
-  PUBKEY=$5
-  WG_SERVER_IP=$6
+  #PORTLIST=$4
+  PUBKEY=$4
+  WG_SERVER_IP=$5
   PK_FOR_SERVER=$(cat $WGPUBKEY)
   echo "Address = $WG_CLIENT_IP/24" >> $WGCONFLOC
   echo "" >> $WGCONFLOC
